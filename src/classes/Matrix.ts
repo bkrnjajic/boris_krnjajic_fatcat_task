@@ -31,11 +31,11 @@ export class Matrix {
         size: 5,
         start: [0, 0],
         end: [5 - 1, 5 - 1],
-        blockingObjectCount: 2,
+        blockingObjectCount: 3,
     };
     private _matrixData: MatrixCoordinate[][] = []
-    private _stopBlockingElementsGeneration: boolean = false
     private _gameLog: MoveResult[] = []
+    private _historicMatrixData: Matrix[] = []
 
     constructor(props?: MatrixProps) {
         this._size = props?.size ?? this._defaultProps.size;
@@ -106,19 +106,19 @@ export class Matrix {
         const neighbors: [number, number][] = [];
         
         // Check West
-        if (xCoo > 0 && this._matrixData[yCoo][xCoo - 1].type !== MatrixElementType.BlockingElement) {
+        if (xCoo > 0 && this._matrixData[xCoo - 1][yCoo].type !== MatrixElementType.BlockingElement) {
             neighbors.push([xCoo - 1, yCoo]);
         }
         // Check East
-        if (xCoo < this._matrixData.length - 1 && this._matrixData[yCoo][xCoo + 1].type !== MatrixElementType.BlockingElement) {
+        if (xCoo < this._matrixData.length - 1 && this._matrixData[xCoo + 1][yCoo].type !== MatrixElementType.BlockingElement) {
             neighbors.push([xCoo + 1, yCoo]);
         }
         // Check North
-        if (yCoo > 0 && this._matrixData[yCoo - 1][xCoo].type !== MatrixElementType.BlockingElement) {
+        if (yCoo > 0 && this._matrixData[xCoo][yCoo - 1].type !== MatrixElementType.BlockingElement) {
             neighbors.push([xCoo, yCoo - 1]);
         }
         // Check South
-        if (yCoo < this._matrixData[0].length - 1 && this._matrixData[yCoo + 1][xCoo].type !== MatrixElementType.BlockingElement) {
+        if (yCoo < this._matrixData[0].length - 1 && this._matrixData[xCoo][yCoo + 1].type !== MatrixElementType.BlockingElement) {
             neighbors.push([xCoo, yCoo + 1]);
         }
 
@@ -150,7 +150,7 @@ export class Matrix {
 
                 path.unshift(start);
 
-                return path;
+                return Array.from(new Set(path));
             }
         
             // Check all possible moves from the current point
@@ -254,10 +254,8 @@ export class Matrix {
      * Gets all elements which are allowed to be replaced with blocking elements
      * and changes some of them to blocking ones. CHanged elements are retrieved randomly.
      */
-    private generateBlockingElements() {
-        if (this._stopBlockingElementsGeneration) {
-            console.log("Skipping BO element generation.")
-        } else if (this._blockingObjectCount > 0) {
+    private generateBlockingElements(): boolean {
+        if (this._blockingObjectCount > 0) {
             const nonBlockingElementsIndex: [number, number][] = []
             const currentBlockingElements: [number, number][] = []
             const playerCoordinate = this.getPlayersCoordinates();
@@ -273,11 +271,10 @@ export class Matrix {
                 })
             })
 
-            if (nonBlockingElementsIndex.length < this._blockingObjectCount) {
-                throw new Error("not enough room for blocking elements")
-            }
-
-            const randomizedPermutationsOfBlockingElements = this.generateAllRandomNewBlockingElementsCombinations(nonBlockingElementsIndex, this._blockingObjectCount)
+            const randomizedPermutationsOfBlockingElements = this.generateAllRandomNewBlockingElementsCombinations(
+                nonBlockingElementsIndex,
+                this._blockingObjectCount
+            );
             let generationCompleted = false;
 
             // in order to check if new blocks can be added, we will have to remove them later on if the path can not be found
@@ -294,7 +291,7 @@ export class Matrix {
 
                 if (this.getShortestPath(
                     playerCoordinate.getCoordinates(),
-                    goalCoordinate.getCoordinates()
+                    goalCoordinate ? goalCoordinate.getCoordinates() : playerCoordinate.getCoordinates()
                 ).length > 0) {
                     generationCompleted = true;
                     this.logMove(newBlockingElements);
@@ -307,10 +304,13 @@ export class Matrix {
             }
 
             if (!generationCompleted) {
-                this._stopBlockingElementsGeneration = true;
                 this.logMove();
             }
+
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -345,19 +345,39 @@ export class Matrix {
         return !playerCoordinates.length ? this.getMatrixTypeCoordinates(MatrixElementType.Start)[0] : playerCoordinates[0];
     }
 
+    /**
+     * Checks if hte game is done by checking if the END Matrix Coordinate is still present.
+     * If not it means it was repalced by the player element.
+     * @returns if game ended
+     */
+    public isDone(): boolean {
+        return !this.getMatrixTypeCoordinates(MatrixElementType.End).length;
+    }
+
+    /***
+     * Moves the player single step
+     */
     public movePlayer(): void {
+        if (this.isDone()) {
+            return;
+        }
+
         const playerCoordinate = this.getPlayersCoordinates();
         const goalCoordinate = this.getMatrixTypeCoordinates(MatrixElementType.End)[0];
 
         const pathToEnd = this.getShortestPath(
             playerCoordinate.getCoordinates(),
-            goalCoordinate.getCoordinates()
+            goalCoordinate ? goalCoordinate.getCoordinates() : playerCoordinate.getCoordinates()
         );
 
-        console.log(this.toString());
-        console.log(pathToEnd);
+        if (pathToEnd.length > 1) {
+            this._matrixData[pathToEnd[0][0]][pathToEnd[0][1]].returnToPreviousType();
+            this._matrixData[pathToEnd[1][0]][pathToEnd[1][1]].type = MatrixElementType.Player;
+            this.generateBlockingElements();
+            return;
+        }
 
-
+        console.log(this._gameLog)
     }
 
     /**
@@ -371,6 +391,10 @@ export class Matrix {
             movingObjectCoordinates: [playersLocation.x, playersLocation.y],
             blockingObjectCoordinates: newBlockingElements.length ? newBlockingElements.map((coordinate: MatrixCoordinate) => coordinate.getCoordinates()) : [],
         });
+        // preserves the data if we want to replay the game in the future
+        this._historicMatrixData.push(
+            Object.assign({}, this)
+        )
     }
 
     /**

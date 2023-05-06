@@ -48,7 +48,7 @@ export class MatrixCoordinate {
      * Used to retrieve the type which was set before it was last changed.
      */
     public returnToPreviousType() {
-        this._type = this._lastType;
+        this._type = this._lastType || this._type;
     }
 
     public equals(other: MatrixCoordinate): boolean {

@@ -15,12 +15,21 @@ interface CanvasProps {
  */
 export const Canvas: React.FC<CanvasProps> = ({ matrix, size }: CanvasProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    let moves = 0;
 
     useEffect(() => {
         if (canvasRef.current && size > 0) {
             drawMatrixOnCanvas(canvasRef.current, matrix, size);
+
+            setInterval(() => {
+                matrix.movePlayer();
+                moves++;
+                if (canvasRef.current && size > 0) {
+                    drawMatrixOnCanvas(canvasRef.current, matrix, size);
+                }
+            }, 1000);
         }
-    }, [matrix, size]);
+    }, [matrix, size, moves]);
 
     return (
         size ? <canvas
@@ -88,7 +97,7 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWid
             } else if (element.type === MatrixElementType.NonBlockingElement) {
                 color = "#00ff00";
             } else if (element.type === MatrixElementType.Player) {
-                color = "#FF0000";
+                color = "#800080";
             } else if (element.type === MatrixElementType.Start) {
                 color = "#FFFF00";
             } else if (element.type === MatrixElementType.End) {
