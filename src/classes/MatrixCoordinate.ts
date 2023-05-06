@@ -55,6 +55,20 @@ export class MatrixCoordinate {
       return this._x === other._x && this._y === other._y;
     }
 
+    public coordinateToString(): string {
+        return `${this._x}:${this._y}`;
+    }
+
+    static stringToCoordinate(stringValue: string): [number, number] {
+        const values = stringValue.split(':');
+
+        if (values.length === 2) {
+            return [parseInt(values[0]), parseInt(values[1])];
+        }
+
+        return [-1, -1];
+    }
+
     public toString(): string {
       return this._type;
     }

@@ -1,4 +1,5 @@
 import { MatrixCoordinate, MatrixElementType } from './MatrixCoordinate';
+import bigInt from 'big-integer';
 
 /**
  * Interface defining parameters to the Matrix class
@@ -193,101 +194,98 @@ export class Matrix {
         this._matrixData[this._end[0]][this._end[1]].type = MatrixElementType.End
     }
 
-    // TODO move this 2 functions to some helper file
-    /**
-     * Generate all permutations of an arr with size number of elements
-     * @param arr - array of any value
-     * @param size - number of elements used when creating permutations
+    /***
+     * Generates array of random numbers used to randomly target indexes of an existing array with some data.
      */
-    private permutations<T>(arr: T[], length: number = 2): T[][] {
-        if (length <= 0 || length > arr.length) {
-            return [];
-        }
-    
-        const permutations: T[][] = [];
-        const generate = (start: number, elements: T[]) => {
-            if (elements.length === length) {
-                permutations.push(elements.slice());
-                return;
-            }
+    private generateArrayOfRandomNumbers(max: number, amount: number): number[] {
+        let allNumbers = Array.from({length: max}, (_, i) => i);
+        let result: number[] = [];
 
-            for (let i = start; i < arr.length; i++) {
-                elements.push(arr[i]);
-                generate(i + 1, elements);
-                elements.pop();
-            }
+        if (amount > max) {
+            return result;
         }
 
-        generate(0, []);
-        return permutations; 
+        while (result.length < amount) {
+            const randomIndex = Math.floor(Math.random() * allNumbers.length);
+            const randomNumber = allNumbers[randomIndex];
+            allNumbers.splice(randomIndex, 1);
+
+            result.push(randomNumber);
+        }
+        
+        return result;
     }
 
     /**
-     * Randomly shuffles array elements
-     * @param array - array with any type of values
-     * @returns duplicate of the array with same elements randomly shuffled
-     */
-    private shuffleArray<T>(array: T[]): T[] {
-        const newArray = [...array];
-    
-        for (let i = newArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-        }
-    
-        return newArray;
-    }
-
-    /**
-     * Generates all combinations of new blocking elements that can be generated. This include blocking path combinations too.
-     * Returns them as an array which is randomly shuffled.
-     * @param freeCoordinates - coordinates which are allowed to be converted to blocking elements
-     * @param numberOfNewBlocks - amount of new blocking elements to be generated
+     * Calucaltes the factorial value of n even for very large numbers
+     * @param n - target
      * @returns 
      */
-    private generateAllRandomNewBlockingElementsCombinations(freeCoordinates: [number, number][], numberOfNewBlocks: number) : [number, number][][] {
-        const result = this.permutations(freeCoordinates, numberOfNewBlocks);
-        return this.shuffleArray(result);
+    private factorial(n: number): bigInt.BigInteger {
+        if (n <= 1) {
+            return bigInt(1);
+        }
+        return bigInt(n).times(this.factorial(n - 1));
     }
 
     /**
-     * Gets all elements which are allowed to be replaced with blocking elements
-     * and changes some of them to blocking ones. CHanged elements are retrieved randomly.
+     * IN order to optimize the application for some more normal values, the algorithm works by generating a random set of
+     * tiles to be blocked based on the current not blocked tiles. We keep count of unique values and make sure it is less
+     * then the max number of combinations possible to have based on the formula nCr = n! / r!(n-r)!
+     * 
+     * This will work much faster for normal size matrixes, but will get increasingly slow the higher values there are.
+     * Other option would be to generate all combinations before hand and randomly pick few, but considering for a matrix of
+     * 20x20 and 10 blocking fields, numbers can be in milions and it is extremely slow.
+     * 
+     * Current implementation will be slower for very high numbers, because it is possible to get same combination sets when generating
+     * random values which are then skipped.
      */
     private generateBlockingElements(): boolean {
         if (this._blockingObjectCount > 0) {
-            const nonBlockingElementsIndex: [number, number][] = []
-            const currentBlockingElements: [number, number][] = []
+            const nonBlockingElements: MatrixCoordinate[] = []
+            const currentBlockingElements: MatrixCoordinate[] = []
             const playerCoordinate = this.getPlayersCoordinates();
             const goalCoordinate = this.getMatrixTypeCoordinates(MatrixElementType.End)[0];
+            // nCr = n! / r!(n-r)!
+            const maxCombinations = this.factorial(nonBlockingElements.length).divide(this.factorial(this._blockingObjectCount).multiply(this.factorial(nonBlockingElements.length - this._blockingObjectCount)))
+            const triedCombinations = new Set();
 
-            this._matrixData.forEach((row, indexX) => {
-                row.forEach((matrixElement, indexY) => {
-                    if (matrixElement.type === MatrixElementType.NonBlockingElement) {
-                        nonBlockingElementsIndex.push([indexX, indexY])
-                    } else if (matrixElement.type === MatrixElementType.BlockingElement) {
-                        currentBlockingElements.push([indexX, indexY])
+            this._matrixData.forEach((row) => {
+                row.forEach((matrixCoordinate) => {
+                    if (matrixCoordinate.type === MatrixElementType.NonBlockingElement) {
+                        nonBlockingElements.push(matrixCoordinate)
+                    } else if (matrixCoordinate.type === MatrixElementType.BlockingElement) {
+                        currentBlockingElements.push(matrixCoordinate)
                     }
                 })
             })
 
-            const randomizedPermutationsOfBlockingElements = this.generateAllRandomNewBlockingElementsCombinations(
-                nonBlockingElementsIndex,
-                this._blockingObjectCount
-            );
             let generationCompleted = false;
 
-            // in order to check if new blocks can be added, we will have to remove them later on if the path can not be found
-            // we could also duplicate the matrix and work with the copy, but that is the worse way
-            for (let index = 0; index < randomizedPermutationsOfBlockingElements.length; index++) {
-                const permutation = randomizedPermutationsOfBlockingElements[index];
+            while (!generationCompleted) {        
+                let randomCombination : MatrixCoordinate[];
+                let randomIndexes;
+                try {
+                    do {
+                        randomIndexes = this.generateArrayOfRandomNumbers(nonBlockingElements.length, this._blockingObjectCount);
+                        randomCombination = randomIndexes.map(index => nonBlockingElements[index]).sort((one, two) => (one.coordinateToString() > two.coordinateToString() ? -1 : 1));
+                    } while (triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(',')) || maxCombinations.greater(triedCombinations.size));
+
+                } catch(error) {
+                    randomCombination = []
+                }
+
+                triedCombinations.add(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
+                                    
+                // in order to check if new blocks can be added, we will have to remove them later on if the path can not be found
+                // we could also duplicate the matrix and work with the copy, but that is the worse way
                 const newBlockingElements: MatrixCoordinate[] = [];
 
-                permutation.forEach((coordinate: [number, number]) => {
-                    const matrixElement: MatrixCoordinate = this._matrixData[coordinate[0]][coordinate[1]];
-                    matrixElement.type = MatrixElementType.BlockingElement
-                    newBlockingElements.push(matrixElement)
-                })
+                for (let index = 0; index < randomCombination.length; index++) {
+                    const combination: MatrixCoordinate = randomCombination[index];
+                    combination.type = MatrixElementType.BlockingElement
+                    newBlockingElements.push(combination)
+                }
 
                 if (this.getShortestPath(
                     playerCoordinate.getCoordinates(),
@@ -297,8 +295,8 @@ export class Matrix {
                     this.logMove(newBlockingElements);
                     break;
                 } else {
-                    permutation.forEach((coordinate: [number, number]) => {
-                        this._matrixData[coordinate[0]][coordinate[1]].returnToPreviousType();
+                    randomCombination.forEach((matrixCoordinate: MatrixCoordinate) => {
+                        matrixCoordinate.returnToPreviousType();
                     })
                 }
             }
@@ -374,10 +372,11 @@ export class Matrix {
             this._matrixData[pathToEnd[0][0]][pathToEnd[0][1]].returnToPreviousType();
             this._matrixData[pathToEnd[1][0]][pathToEnd[1][1]].type = MatrixElementType.Player;
             this.generateBlockingElements();
-            return;
         }
-
-        console.log(this._gameLog)
+        
+        if (this.isDone()) {
+            console.log(this._gameLog)
+        }
     }
 
     /**
