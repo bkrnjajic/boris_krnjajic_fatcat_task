@@ -1,0 +1,20 @@
+.styled-button {
+    background-color: black;
+    color: white;
+    font-size: 20px;
+    padding: 10px 60px;
+    border-radius: 5px;
+    margin: 10px 0px;
+    cursor: pointer;
+    display: inline-block;
+    width: calc(30.5% - 10px);
+    margin: 5px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+    .styled-button {
+        width: 100%;
+        margin: 5px 0;
+    }
+}

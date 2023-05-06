@@ -15,19 +15,19 @@ interface CanvasProps {
  */
 export const Canvas: React.FC<CanvasProps> = ({ matrix, size }: CanvasProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    
+
     useEffect(() => {
         if (canvasRef.current && size > 0) {
             drawMatrixOnCanvas(canvasRef.current, matrix, size);
         }
-    }, [matrix]);
+    }, [matrix, size]);
 
     return (
-        <canvas
+        size ? <canvas
             ref={canvasRef}
             width={size}
             height={size}
-        ></canvas>
+        ></canvas> : null
     );
 };
 
@@ -72,11 +72,15 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWid
 
     // Clear the canvas
     context.clearRect(0, 0, canvas.width, canvas.height);
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width;
+    canvas.height = rect.height;
 
     // Draw the matrix elements
-    for (let i = 0; i < matrix.size; i++) {
-        for (let j = 0; j < matrix.size; j++) {
-            const element: MatrixCoordinate = matrix.matrixData[i][j];
+    for (let xCoo = 0; xCoo < matrix.size; xCoo++) {
+        for (let yCoo = 0; yCoo < matrix.size; yCoo++) {
+            const element: MatrixCoordinate = matrix.matrixData[xCoo][yCoo];
             let color = "";
 
             if (element.type === MatrixElementType.BlockingElement) {
@@ -91,7 +95,7 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWid
                 color = "#FF0000";
             }
 
-            drawRect(context, j * blockSize, i * blockSize, blockSize, blockSize, 4, color, startPosition);
+            drawRect(context, xCoo * blockSize, yCoo * blockSize, blockSize, blockSize, 4, color, startPosition);
         }
     }
 }
