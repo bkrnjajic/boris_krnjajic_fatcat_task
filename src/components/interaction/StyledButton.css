@@ -12,6 +12,10 @@
     box-sizing: border-box;
 }
 
+.styled-button:disabled {
+    background-color: #dddddd;
+}
+
 @media (max-width: 480px) {
     .styled-button {
         width: 100%;

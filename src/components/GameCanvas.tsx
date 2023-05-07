@@ -1,3 +1,4 @@
+import React from 'react';
 import { useRef, useEffect } from "react";
 import { Matrix } from '../classes/Matrix';
 import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate';
@@ -7,29 +8,21 @@ import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate
  */
 interface CanvasProps {
     matrix: Matrix;
-    size: number
+    size: number;
+    rerender: number;
 }
 
 /***
  * Canvas class initialization
  */
-export const Canvas: React.FC<CanvasProps> = ({ matrix, size }: CanvasProps) => {
+const Canvas: React.FC<CanvasProps> = ({ matrix, size, rerender }: CanvasProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    let moves = 0;
 
     useEffect(() => {
         if (canvasRef.current && size > 0) {
             drawMatrixOnCanvas(canvasRef.current, matrix, size);
-
-            setInterval(() => {
-                matrix.movePlayer();
-                moves++;
-                if (canvasRef.current && size > 0) {
-                    drawMatrixOnCanvas(canvasRef.current, matrix, size);
-                }
-            }, 1000);
         }
-    }, [matrix, size, moves]);
+    }, [matrix, size, rerender]);
 
     return (
         size ? <canvas
@@ -73,18 +66,19 @@ const drawRect = (
  */
 function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWidth : number) {
     const context = canvas.getContext("2d");
-    const blockSize = (screenWidth / matrix.size) * 0.9
-    const startPosition = (screenWidth - blockSize * matrix.size) / 2
     if (!context) {
         return;
     }
 
     // Clear the canvas
-    context.clearRect(0, 0, canvas.width, canvas.height);
     const rect = canvas.getBoundingClientRect();
 
     canvas.width = rect.width;
     canvas.height = rect.height;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const blockSize = (canvas.width / matrix.size) * 0.9
+    const startPosition = (canvas.width - blockSize * matrix.size) / 2
 
     // Draw the matrix elements
     for (let xCoo = 0; xCoo < matrix.size; xCoo++) {
@@ -108,3 +102,5 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWid
         }
     }
 }
+
+export default Canvas;

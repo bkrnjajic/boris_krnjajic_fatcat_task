@@ -3,12 +3,13 @@ import './StyledButton.css'
 
 interface ButtonProps {
     onClick?: () => void;
+    disabled?: boolean;
     children?: React.ReactNode;
 }
 
-const Button: React.FC<ButtonProps> = ({ onClick, children }) => {
+const Button: React.FC<ButtonProps> = ({ onClick, disabled, children }) => {
     return (
-        <button className="styled-button" onClick={onClick}>
+        <button disabled={disabled} className="styled-button" onClick={onClick}>
             {children}
         </button>
     );

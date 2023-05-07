@@ -4,11 +4,12 @@ import bigInt from 'big-integer';
 /**
  * Interface defining parameters to the Matrix class
  */
-interface MatrixProps {
+export interface MatrixProps {
     size: number;
     start: [number, number];
     end: [number, number];
     blockingObjectCount: number;
+    [key: string]: any;
 }
 
 /***
@@ -19,34 +20,62 @@ interface MoveResult {
     blockingObjectCoordinates: [number, number][],
 }
 
+const defaultMatrixValues = {
+    size: import.meta.env.VITE_DEFAULT_MATRIX_SIZE,
+    start: [import.meta.env.VITE_DEFAULT_START_X_COO, import.meta.env.VITE_DEFAULT_START_Y_COO],
+    end: [import.meta.env.VITE_DEFAULT_END_X_COO, import.meta.env.VITE_DEFAULT_END_Y_COO],
+    blockingObjectCount: import.meta.env.VITE_DEFAULT_BLOCK_OBJ_COUNT
+}
+
 /**
  * Represents the matrix information containing all the current game data and options to control the game progress
  */
 export class Matrix {
     static _lastInstance: Matrix;
-    private _size: number;
-    private _start: [number, number];
-    private _end: [number, number];
-    private _blockingObjectCount: number;
+    private _size: number = 5;
+    private _start: [number, number] = [0, 0];
+    private _end: [number, number] = [4, 4];
+    private _blockingObjectCount: number = 2;
+    // in order to avoid confusing 0 values from the config as false, we must clear the env variable values
+    // and double check if the value is just falsy or actualy undefined. == null check will confirm if it is undefined or null
     private _defaultProps: MatrixProps = {
-        size: 5,
-        start: [0, 0],
-        end: [5 - 1, 5 - 1],
-        blockingObjectCount: 3,
+        size: defaultMatrixValues.size == null ? 5 : defaultMatrixValues.size,
+        start: [
+            defaultMatrixValues.start[0] == null ? 0 : defaultMatrixValues.start[0],
+            defaultMatrixValues.start[1] == null ? 0 : defaultMatrixValues.start[1]
+        ],
+        end: [
+            defaultMatrixValues.end[0] == null ? 4 : defaultMatrixValues.end[0],
+            defaultMatrixValues.end[1] ? 4 : defaultMatrixValues.end[1]
+        ],
+        blockingObjectCount: defaultMatrixValues.blockingObjectCount == null ? 2 : defaultMatrixValues.blockingObjectCount,
     };
     private _matrixData: MatrixCoordinate[][] = []
     private _gameLog: MoveResult[] = []
     private _historicMatrixData: Matrix[] = []
 
     constructor(props?: MatrixProps) {
+        this.resetMatrixData(props);
+    }
+    
+    /**
+     * It resets the matrix values based on the new matrix parameters.
+     * ALso cleares all the historic data.
+     * @param props 
+     */
+    public resetMatrixData(props?: Partial<MatrixProps>) {
         this._size = props?.size ?? this._defaultProps.size;
         this._start = props?.start ?? this._defaultProps.start;
         this._end = props?.end ?? this._defaultProps.end;
         this._blockingObjectCount = props?.blockingObjectCount ?? this._defaultProps.blockingObjectCount;
 
+        // reset all values to default
+        this._matrixData = [];
+        this._gameLog = [];
+        this._historicMatrixData = []
         this.buildMatrixData();
     }
-    
+
     /**
      * Simple singleton pattern to stop multiple generation of the matrix if react is rerendering something
      * @returns 
@@ -93,8 +122,7 @@ export class Matrix {
         this._start = mergedProps.start;
         this._end = mergedProps.end;
         this._blockingObjectCount = mergedProps.blockingObjectCount;
-
-        this.buildMatrixData();
+        this.resetMatrixData(props);
     }
 
     /**
@@ -245,9 +273,8 @@ export class Matrix {
             const nonBlockingElements: MatrixCoordinate[] = []
             const currentBlockingElements: MatrixCoordinate[] = []
             const playerCoordinate = this.getPlayersCoordinates();
-            const goalCoordinate = this.getMatrixTypeCoordinates(MatrixElementType.End)[0];
+            const goalCoordinate = this.getEndCoordinates();
             // nCr = n! / r!(n-r)!
-            const maxCombinations = this.factorial(nonBlockingElements.length).divide(this.factorial(this._blockingObjectCount).multiply(this.factorial(nonBlockingElements.length - this._blockingObjectCount)))
             const triedCombinations = new Set();
 
             this._matrixData.forEach((row) => {
@@ -261,15 +288,22 @@ export class Matrix {
             })
 
             let generationCompleted = false;
+            let maxCombinations = this.factorial(nonBlockingElements.length).divide(
+                this.factorial(this._blockingObjectCount).multiply(
+                    this.factorial(nonBlockingElements.length - this._blockingObjectCount)
+                )
+            )
 
-            while (!generationCompleted) {        
+            while (!generationCompleted) {
                 let randomCombination : MatrixCoordinate[];
                 let randomIndexes;
                 try {
+                    // TODO improve the logic that if we are not able to get a random combination we need to get all
+                    // combinations and get one from those
                     do {
                         randomIndexes = this.generateArrayOfRandomNumbers(nonBlockingElements.length, this._blockingObjectCount);
                         randomCombination = randomIndexes.map(index => nonBlockingElements[index]).sort((one, two) => (one.coordinateToString() > two.coordinateToString() ? -1 : 1));
-                    } while (triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(',')) || maxCombinations.greater(triedCombinations.size));
+                    } while (triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(',')) || maxCombinations.compare(triedCombinations.size) < 0);
 
                 } catch(error) {
                     randomCombination = []
@@ -289,7 +323,7 @@ export class Matrix {
 
                 if (this.getShortestPath(
                     playerCoordinate.getCoordinates(),
-                    goalCoordinate ? goalCoordinate.getCoordinates() : playerCoordinate.getCoordinates()
+                    goalCoordinate.getCoordinates()
                 ).length > 0) {
                     generationCompleted = true;
                     this.logMove(newBlockingElements);
@@ -338,9 +372,18 @@ export class Matrix {
      * In the case the game just started, there is no player, only the start element.
      * @returns players coordinates
      */
-    public getPlayersCoordinates() : MatrixCoordinate{
+    public getPlayersCoordinates() : MatrixCoordinate {
         const playerCoordinates = this.getMatrixTypeCoordinates(MatrixElementType.Player);
         return !playerCoordinates.length ? this.getMatrixTypeCoordinates(MatrixElementType.Start)[0] : playerCoordinates[0];
+    }
+
+    /**
+     * In the case the game is almost ended, there is no end tile, only the player tile.
+     * @returns players coordinates
+     */
+    public getEndCoordinates() : MatrixCoordinate{
+        const goalCoordinates = this.getMatrixTypeCoordinates(MatrixElementType.End);
+        return !goalCoordinates.length ? this.getPlayersCoordinates() : goalCoordinates[0];
     }
 
     /**
@@ -361,17 +404,20 @@ export class Matrix {
         }
 
         const playerCoordinate = this.getPlayersCoordinates();
-        const goalCoordinate = this.getMatrixTypeCoordinates(MatrixElementType.End)[0];
+        const goalCoordinate = this.getEndCoordinates();
 
         const pathToEnd = this.getShortestPath(
             playerCoordinate.getCoordinates(),
-            goalCoordinate ? goalCoordinate.getCoordinates() : playerCoordinate.getCoordinates()
+            goalCoordinate.getCoordinates(),
         );
 
         if (pathToEnd.length > 1) {
             this._matrixData[pathToEnd[0][0]][pathToEnd[0][1]].returnToPreviousType();
             this._matrixData[pathToEnd[1][0]][pathToEnd[1][1]].type = MatrixElementType.Player;
-            this.generateBlockingElements();
+
+            if (!this.isDone()) {
+                this.generateBlockingElements();
+            }
         }
         
         if (this.isDone()) {

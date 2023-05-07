@@ -1,20 +1,68 @@
-import React from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import './Input.css';
 
-interface InputProps {
-    label: string;
-    type: string;
-    value: string|number;
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+/**
+ * Processes the page input field changes
+ */
+export class InputDefinition {
+    public label: string;
+    public type: string;
+    public value: string|number;
+    public errorMessage: string|null|undefined;
+    public callback: (event: ChangeEvent<HTMLInputElement>) => string|void
+    public setErrorMessage: Function = () => {};
+
+    constructor(
+        label: string,
+        type: string,
+        value: string | number,
+        errorMessage: string | null | undefined = null,
+        callback: (event: ChangeEvent<HTMLInputElement>) => string|void
+    ) {
+            this.label = label;
+            this.type = type;
+            this.value = value;
+            this.errorMessage = errorMessage;
+            this.callback = callback;
+    }
+
+    /**
+     * When there is a new error message we must use this function if we
+     * want to rerender the input field with the error message. setErrorMessage
+     * function deals with the rerender.
+     * @param error 
+     * @returns 
+     */
+    updateErrorMessage(error: string|null|undefined): void {
+        if (error) {
+            this.errorMessage = error;
+            this.setErrorMessage(error);
+            return;
+        }
+        
+        if (this.errorMessage){
+            this.errorMessage = '';
+            this.setErrorMessage(error);
+        }
+    }
 }
 
-const Input: React.FC<InputProps> = ({ label, type, value, onChange }) => {
+/**
+ * Component props
+ */
+interface InputProps {
+    inputDefinition: InputDefinition
+}
+
+export const Input: React.FC<InputProps> = ({ inputDefinition }) => {
+    const [errorMessage, setErrorMessage] = useState<string>('');
+    inputDefinition.setErrorMessage = (error: string) => setErrorMessage(error);
+  
     return (
         <div className="styled-input">
-            <label>{label}</label>
-            <input type={type} value={value} onChange={onChange} />
+            <label>{inputDefinition.label}</label>
+            <input type={inputDefinition.type} defaultValue={inputDefinition.value} onChange={inputDefinition.callback} />
+            {errorMessage && <span style={{ color: 'red' }}>{errorMessage}</span>}
         </div>
-    );
-};
-
-export default Input;
+    )
+}
