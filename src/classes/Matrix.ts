@@ -155,6 +155,25 @@ export class Matrix {
     }
 
     /**
+     * Gets all possible combinations of the array of strings.
+     * @param arr - array of strings
+     * @param len - number of elements in a single combination
+     * @returns generator with all the combinations available
+     */
+    private getCombinations(arr: string[], len: number): Generator<string[]> {
+        function* backtrack(start: number = 0, current: string[] = []): Generator<string[]> {
+          if (current.length === len) {
+            yield current;
+            return;
+          }
+          for (let i = start; i < arr.length; i++) {
+            yield* backtrack(i + 1, [...current, arr[i]]);
+          }
+        }
+        return backtrack();
+    }
+
+    /**
      * Finds the shortest path from the current position to the end goal
      * @param start - start (current) coordinates
      * @param end - end coordinates
@@ -187,7 +206,6 @@ export class Matrix {
 
             for (const neighbor of neighbors) {
                 // Check if the neighbor is not blocked and hasn't been visited yet
-                // TODO add logic to be able to go back into a visited element only in the case there are no non blocked neighbors
                 if (!visited.has(neighbor.toString())) {
                     queue.push(neighbor);
                     visited.add(neighbor.toString());
@@ -257,25 +275,30 @@ export class Matrix {
     }
 
     /**
-     * IN order to optimize the application for some more normal values, the algorithm works by generating a random set of
-     * tiles to be blocked based on the current not blocked tiles. We keep count of unique values and make sure it is less
+     * In order to optimize the speed to the max we will use 3 different algorithms depending how deep we get into getting new values.
+     * 
+     * 1. We will start by randomly generating new blocking fields based on the fields which can be blocked.
+     * 2. Once we try to randomly generate for 20000 times, we will retrieve all possible combinations and look for one we didn't have randomly generated and continue trying that path.
+     * 3. For big matrixes this is also not enough. So in this case if we get to 100000 tried blocking combinations, we will retrieve the actual path to the end
+     *    and not block this values too.
+     * 
+     * We will always keep count of unique values and make sure it is less
      * then the max number of combinations possible to have based on the formula nCr = n! / r!(n-r)!
      * 
-     * This will work much faster for normal size matrixes, but will get increasingly slow the higher values there are.
-     * Other option would be to generate all combinations before hand and randomly pick few, but considering for a matrix of
-     * 20x20 and 10 blocking fields, numbers can be in milions and it is extremely slow.
-     * 
-     * Current implementation will be slower for very high numbers, because it is possible to get same combination sets when generating
-     * random values which are then skipped.
+     * Current implementation will be completely random for smaller matrixes, but later will use shortcuts.
      */
     private generateBlockingElements(): boolean {
         if (this._blockingObjectCount > 0) {
-            const nonBlockingElements: MatrixCoordinate[] = []
+            let nonBlockingElements: MatrixCoordinate[] = []
             const currentBlockingElements: MatrixCoordinate[] = []
             const playerCoordinate = this.getPlayersCoordinates();
             const goalCoordinate = this.getEndCoordinates();
             // nCr = n! / r!(n-r)!
             const triedCombinations = new Set();
+            const finalizeGameTileCount = this.getShortestPath(
+                playerCoordinate.getCoordinates(),
+                goalCoordinate.getCoordinates()
+            ).length;
 
             this._matrixData.forEach((row) => {
                 row.forEach((matrixCoordinate) => {
@@ -297,16 +320,79 @@ export class Matrix {
             while (!generationCompleted) {
                 let randomCombination : MatrixCoordinate[];
                 let randomIndexes;
+                let invalidValuesCounter = 0;
+                let combinationGenerator = null;
+                if (nonBlockingElements.length - finalizeGameTileCount < this._blockingObjectCount) {
+                    this.logMove();
+                    return true;
+                }
+
                 try {
                     // TODO improve the logic that if we are not able to get a random combination we need to get all
                     // combinations and get one from those
                     do {
                         randomIndexes = this.generateArrayOfRandomNumbers(nonBlockingElements.length, this._blockingObjectCount);
                         randomCombination = randomIndexes.map(index => nonBlockingElements[index]).sort((one, two) => (one.coordinateToString() > two.coordinateToString() ? -1 : 1));
-                    } while (triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(',')) || maxCombinations.compare(triedCombinations.size) < 0);
 
+                        // if our random combination generation gets stuck we will help it out by getting an actual working combination
+                        if (invalidValuesCounter > 10000) {
+                            combinationGenerator = combinationGenerator ?? this.getCombinations(
+                                nonBlockingElements.map((coordinate: MatrixCoordinate) => coordinate.coordinateToString()), this._blockingObjectCount
+                            );
+
+                            for (const comb of combinationGenerator) {
+                                if (!triedCombinations.has(comb.join(','))) {
+                                    randomCombination = comb.map((coordString: string) => {
+                                        const coordinates = MatrixCoordinate.stringToCoordinate(coordString);
+                                        return this._matrixData[coordinates[0]][coordinates[1]];
+                                    });
+                                    continue;
+                                }
+                            }
+                        } else {
+                            invalidValuesCounter++;
+                        }
+                    } while (
+                        triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
+                        && maxCombinations.compare(triedCombinations.size) >= 0);
                 } catch(error) {
                     randomCombination = []
+                }
+
+                if (maxCombinations.compare(triedCombinations.size) < 0) {
+                    this.logMove();
+                    return true;
+                }
+
+                // once our code is really stuck, we will help it by telling it which fields are needed
+                // to get to the end of the matrix, and then we will not block these values.
+                if (triedCombinations.size > 100000) {
+                    const pathToEnd = this.getShortestPath(
+                        playerCoordinate.getCoordinates(),
+                        goalCoordinate.getCoordinates()
+                    );
+                    const recalculatedBlockingFields = [];
+                    this._matrixData.forEach((row) => {
+                        row.forEach((matrixCoordinate) => {
+                            if (matrixCoordinate.type === MatrixElementType.NonBlockingElement) {
+                                recalculatedBlockingFields.push(matrixCoordinate)
+                            }
+                        })
+                    });
+
+                    while (pathToEnd.length) {
+                        const pathCoordinate = pathToEnd.pop();
+
+                        if (pathCoordinate) {
+                            const targetCoordinate: MatrixCoordinate|undefined = this._matrixData[pathCoordinate[0]][pathCoordinate[1]];
+    
+                            if (targetCoordinate) {
+                                nonBlockingElements = nonBlockingElements.filter((coordinate: MatrixCoordinate) => coordinate !== targetCoordinate);
+                                randomIndexes = this.generateArrayOfRandomNumbers(nonBlockingElements.length, this._blockingObjectCount);
+                                randomCombination = randomIndexes.map(index => nonBlockingElements[index]).sort((one, two) => (one.coordinateToString() > two.coordinateToString() ? -1 : 1));
+                            }
+                        }
+                    }
                 }
 
                 triedCombinations.add(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
