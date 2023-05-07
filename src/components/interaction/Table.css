@@ -1,0 +1,17 @@
+.results-table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+  
+.results-table thead {
+    background-color: #f2f2f2;
+}
+
+.results-table tr {
+    background-color: #fff;
+}
+
+.results-table tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}

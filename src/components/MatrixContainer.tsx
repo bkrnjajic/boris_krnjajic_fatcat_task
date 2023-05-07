@@ -19,7 +19,7 @@ enum InputMatrixTypes {
  * based on the numberof tiles. single tile can be maximum 120 px wide
  */
 function processWidthSize(screenSize: number, matrix: Matrix) {
-    const maxSizePerMatrix = matrix.size * 120;
+    const maxSizePerMatrix = matrix.size * 120 > 1200 ? 1200 : matrix.size * 120;
     return screenSize > maxSizePerMatrix ? maxSizePerMatrix : screenSize;
 }
 
@@ -41,8 +41,8 @@ function updateMatrixSimpleValues(type: InputMatrixTypes, value: string, propToU
 
 
     // type specific validation
-    if (type === InputMatrixTypes.SIZE && (targetValue < 4 || targetValue > 400)) {
-        return 'Matrix size can not be smaller then 3, or larger then 400. Anything larger then 20 will use a lot of your computer resources.';
+    if (type === InputMatrixTypes.SIZE && (targetValue < 4 || targetValue > 200)) {
+        return 'Matrix size can not be smaller then 3, or larger then 200. Anything larger then 20 will use a lot of your computer resources.';
     }
 
     if (type === InputMatrixTypes.BLOCK_COUNT) {
@@ -235,6 +235,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
                         intervalId = null;
                     }
                     gameMatrix.reloadMatrix(matrixProps);
+                    setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix));
                     rerender(rerenderValue + 1);
                 }}>
                     Restart

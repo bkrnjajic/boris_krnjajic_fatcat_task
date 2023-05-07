@@ -70,6 +70,6 @@ export class MatrixCoordinate {
     }
 
     public toString(): string {
-      return this._type;
+        return this._type;
     }
 }

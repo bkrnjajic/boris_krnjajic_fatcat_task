@@ -39,6 +39,20 @@
   height: 100%;
 }
 
+.result-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding-top: 100px;
+}
+
 .read-the-docs {
   color: #888;
+}
+
+.result-card .results table{
+    display: inline-table;
+    flex-wrap: wrap;
+    justify-content: center;
 }

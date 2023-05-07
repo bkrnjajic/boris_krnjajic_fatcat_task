@@ -98,7 +98,7 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWid
                 color = "#FF0000";
             }
 
-            drawRect(context, xCoo * blockSize, yCoo * blockSize, blockSize, blockSize, 4, color, startPosition);
+            drawRect(context, xCoo * blockSize, yCoo * blockSize, blockSize, blockSize, 1, color, startPosition);
         }
     }
 }

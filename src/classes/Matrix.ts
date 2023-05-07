@@ -1,5 +1,4 @@
 import { MatrixCoordinate, MatrixElementType } from './MatrixCoordinate';
-import bigInt from 'big-integer';
 
 /**
  * Interface defining parameters to the Matrix class
@@ -15,7 +14,7 @@ export interface MatrixProps {
 /***
  * End result interface
  */
-interface MoveResult {
+export interface MoveResult {
     movingObjectCoordinates: [number, number],
     blockingObjectCoordinates: [number, number][],
 }
@@ -36,6 +35,8 @@ export class Matrix {
     private _start: [number, number] = [0, 0];
     private _end: [number, number] = [4, 4];
     private _blockingObjectCount: number = 2;
+    private factorialMemo: Map<number, bigint> = new Map();
+    
     // in order to avoid confusing 0 values from the config as false, we must clear the env variable values
     // and double check if the value is just falsy or actualy undefined. == null check will confirm if it is undefined or null
     private _defaultProps: MatrixProps = {
@@ -107,6 +108,9 @@ export class Matrix {
     
     get matrixData(): MatrixCoordinate[][] {
         return this._matrixData;
+    }
+    get gameLog(): MoveResult[] {
+        return this._gameLog;
     }
 
     /**
@@ -263,15 +267,21 @@ export class Matrix {
     }
 
     /**
-     * Calucaltes the factorial value of n even for very large numbers
+     * Calculates the factorial value of n even for very large numbers. It uses memoization to speed things up
      * @param n - target
      * @returns 
      */
-    private factorial(n: number): bigInt.BigInteger {
-        if (n <= 1) {
-            return bigInt(1);
+    private factorial(n: number): bigint {
+        this.factorialMemo.set(0, 1n);
+        this.factorialMemo.set(1, 1n);
+        
+        for (let i = 2; i <= n; i++) {
+          const prev = this.factorialMemo.get(i - 1) ?? 1n;
+          const curr = prev * BigInt(i);
+          this.factorialMemo.set(i, curr);
         }
-        return bigInt(n).times(this.factorial(n - 1));
+
+        return this.factorialMemo.get(n) ?? 1n;
     }
 
     /**
@@ -311,11 +321,8 @@ export class Matrix {
             })
 
             let generationCompleted = false;
-            let maxCombinations = this.factorial(nonBlockingElements.length).divide(
-                this.factorial(this._blockingObjectCount).multiply(
-                    this.factorial(nonBlockingElements.length - this._blockingObjectCount)
-                )
-            )
+            let maxCombinations: bigint = this.factorial(nonBlockingElements.length) /
+                (this.factorial(this._blockingObjectCount) * this.factorial(nonBlockingElements.length - this._blockingObjectCount));
 
             while (!generationCompleted) {
                 let randomCombination : MatrixCoordinate[];
@@ -354,12 +361,12 @@ export class Matrix {
                         }
                     } while (
                         triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
-                        && maxCombinations.compare(triedCombinations.size) >= 0);
+                        && maxCombinations >= triedCombinations.size);
                 } catch(error) {
                     randomCombination = []
                 }
 
-                if (maxCombinations.compare(triedCombinations.size) < 0) {
+                if (maxCombinations < triedCombinations.size) {
                     this.logMove();
                     return true;
                 }
@@ -504,10 +511,6 @@ export class Matrix {
             if (!this.isDone()) {
                 this.generateBlockingElements();
             }
-        }
-        
-        if (this.isDone()) {
-            console.log(this._gameLog)
         }
     }
 
