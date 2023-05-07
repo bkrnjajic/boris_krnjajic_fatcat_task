@@ -9,7 +9,7 @@ import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate
 interface CanvasProps {
     matrix: Matrix;
     size: number;
-    rerender: number;
+    rerender: number; 
 }
 
 /***
