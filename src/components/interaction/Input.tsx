@@ -10,7 +10,7 @@ export class InputDefinition {
     public value: string|number;
     public errorMessage: string|null|undefined;
     public callback: (event: ChangeEvent<HTMLInputElement>) => string|void
-    public setErrorMessage: Function = () => {};
+    private _setErrorMessage: null|((error: string ) => void) = null;
 
     constructor(
         label: string,
@@ -26,6 +26,10 @@ export class InputDefinition {
             this.callback = callback;
     }
 
+    set setErrorMessage(callback: null|((error: string ) => void)) {
+        this._setErrorMessage = callback;
+    }
+
     /**
      * When there is a new error message we must use this function if we
      * want to rerender the input field with the error message. setErrorMessage
@@ -36,13 +40,13 @@ export class InputDefinition {
     updateErrorMessage(error: string|null|undefined): void {
         if (error) {
             this.errorMessage = error;
-            this.setErrorMessage(error);
+            this._setErrorMessage && this._setErrorMessage(error);
             return;
         }
         
         if (this.errorMessage){
             this.errorMessage = '';
-            this.setErrorMessage(error);
+            this._setErrorMessage && this._setErrorMessage(this.errorMessage);
         }
     }
 }
@@ -56,7 +60,11 @@ interface InputProps {
 
 export const Input: React.FC<InputProps> = ({ inputDefinition }) => {
     const [errorMessage, setErrorMessage] = useState<string>('');
-    inputDefinition.setErrorMessage = (error: string) => setErrorMessage(error);
+    inputDefinition.setErrorMessage = (error: string) => {
+        if (error != null) {
+            setErrorMessage(error);
+        }
+    }
   
     return (
         <div className="styled-input">

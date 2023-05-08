@@ -9,7 +9,7 @@ import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate
 interface CanvasProps {
     matrix: Matrix;
     size: number;
-    rerender: number; 
+    rerender: number;
 }
 
 /***
@@ -20,7 +20,7 @@ const Canvas: React.FC<CanvasProps> = ({ matrix, size, rerender }: CanvasProps) 
 
     useEffect(() => {
         if (canvasRef.current && size > 0) {
-            drawMatrixOnCanvas(canvasRef.current, matrix, size);
+            drawMatrixOnCanvas(canvasRef.current, matrix);
         }
     }, [matrix, size, rerender]);
 
@@ -64,7 +64,7 @@ const drawRect = (
 /***
  * Draws the current matrix data on the canvas
  */
-function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix, screenWidth : number) {
+function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix) {
     const context = canvas.getContext("2d");
     if (!context) {
         return;

@@ -8,6 +8,9 @@ export interface MatrixProps {
     start: [number, number];
     end: [number, number];
     blockingObjectCount: number;
+    // because we are accessing element of the class instance representing this prop with a key value made of strings,
+    // we must be able to access it with any, other wise we will have a lot of type errors thrown at us
+    // eslint-disable-next-line
     [key: string]: any;
 }
 
@@ -31,10 +34,10 @@ const defaultMatrixValues = {
  */
 export class Matrix {
     static _lastInstance: Matrix;
-    private _size: number = 5;
+    private _size = 5;
     private _start: [number, number] = [0, 0];
     private _end: [number, number] = [4, 4];
-    private _blockingObjectCount: number = 2;
+    private _blockingObjectCount = 2;
     private factorialMemo: Map<number, bigint> = new Map();
     
     // in order to avoid confusing 0 values from the config as false, we must clear the env variable values
@@ -165,7 +168,7 @@ export class Matrix {
      * @returns generator with all the combinations available
      */
     private getCombinations(arr: string[], len: number): Generator<string[]> {
-        function* backtrack(start: number = 0, current: string[] = []): Generator<string[]> {
+        function* backtrack(start = 0, current: string[] = []): Generator<string[]> {
           if (current.length === len) {
             yield current;
             return;
@@ -189,31 +192,33 @@ export class Matrix {
         const parents: Record<string, [number, number]> = {};
     
         while (queue.length > 0) {
-            const curr = queue.shift()!;
-            if (curr[0] === end[0] && curr[1] === end[1]) {
-                // Build and return the path
-                const path = [end];
-                let currPos = end.toString();
-
-                while (currPos !== start.toString()) {
-                    path.unshift(parents[currPos]);
-                    currPos = parents[currPos].toString();
+            const curr = queue.shift();
+            if (curr) {
+                if (curr[0] === end[0] && curr[1] === end[1]) {
+                    // Build and return the path
+                    const path = [end];
+                    let currPos = end.toString();
+    
+                    while (currPos !== start.toString()) {
+                        path.unshift(parents[currPos]);
+                        currPos = parents[currPos].toString();
+                    }
+    
+                    path.unshift(start);
+    
+                    return Array.from(new Set(path));
                 }
-
-                path.unshift(start);
-
-                return Array.from(new Set(path));
-            }
-        
-            // Check all possible moves from the current point
-            const neighbors: [number, number][] = this.getNeighbors(curr);
-
-            for (const neighbor of neighbors) {
-                // Check if the neighbor is not blocked and hasn't been visited yet
-                if (!visited.has(neighbor.toString())) {
-                    queue.push(neighbor);
-                    visited.add(neighbor.toString());
-                    parents[neighbor.toString()] = curr;
+            
+                // Check all possible moves from the current point
+                const neighbors: [number, number][] = this.getNeighbors(curr);
+    
+                for (const neighbor of neighbors) {
+                    // Check if the neighbor is not blocked and hasn't been visited yet
+                    if (!visited.has(neighbor.toString())) {
+                        queue.push(neighbor);
+                        visited.add(neighbor.toString());
+                        parents[neighbor.toString()] = curr;
+                    }
                 }
             }
         }
@@ -248,8 +253,8 @@ export class Matrix {
      * Generates array of random numbers used to randomly target indexes of an existing array with some data.
      */
     private generateArrayOfRandomNumbers(max: number, amount: number): number[] {
-        let allNumbers = Array.from({length: max}, (_, i) => i);
-        let result: number[] = [];
+        const allNumbers = Array.from({length: max}, (_, i) => i);
+        const result: number[] = [];
 
         if (amount > max) {
             return result;
@@ -321,7 +326,7 @@ export class Matrix {
             })
 
             let generationCompleted = false;
-            let maxCombinations: bigint = this.factorial(nonBlockingElements.length) /
+            const maxCombinations: bigint = this.factorial(nonBlockingElements.length) /
                 (this.factorial(this._blockingObjectCount) * this.factorial(nonBlockingElements.length - this._blockingObjectCount));
 
             while (!generationCompleted) {

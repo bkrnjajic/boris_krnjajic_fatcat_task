@@ -54,7 +54,7 @@ function updateMatrixSimpleValues(type: InputMatrixTypes, value: string, propToU
         }
     }
 
-    let propName: string = type.split('.')[0];
+    const propName: string = type.split('.')[0];
     propToUpdate[propName] = targetValue;
 }
 
@@ -72,7 +72,7 @@ function updateMatrixCoordinates(type: InputMatrixTypes, value: string, propToUp
     if (Number.isNaN(value) || value == null) {
         return 'Value must be a number';
     }
-    const targetValue: number = Number(value);
+    const targetValue = Number(value);
 
     if (type === InputMatrixTypes.START_X || type === InputMatrixTypes.START_Y) {
         if (targetValue < 0 || targetValue > propToUpdate.size - 1) {
@@ -98,8 +98,8 @@ function updateMatrixCoordinates(type: InputMatrixTypes, value: string, propToUp
     }
 
     const targetInfo = type.split('.');
-    let propName: string = targetInfo[0];
-    let arrayIndex: number = Number(targetInfo[1]);
+    const propName: string = targetInfo[0];
+    const arrayIndex = Number(targetInfo[1]);
     propToUpdate[propName][arrayIndex] = targetValue;
 }
 
@@ -193,7 +193,8 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
     const [gameStepCount, updateGameStep] = useState<number>(0);
     const [inputs] = useState(defineInputs(matrixProps));
     const [gameRunning, setGameStatus] = useState<boolean>(false)
-    let intervalId: null|NodeJS.Timeout = null;
+    const [intervalId, setIntervalId] = useState<NodeJS.Timeout|null>(null)
+
     /**
      * Get the current site size and re-render the page based on it to get the matrix
      * properly shown in full size all the time
@@ -207,14 +208,14 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
         updateSize();
 
         return () => window.removeEventListener('resize', updateSize);
-    }, []);
+    });
 
     useEffect(() => {
         if (!gameMatrix.isDone() && gameRunning) {
             gameMatrix.movePlayer();
-            intervalId = setTimeout(() => updateGameStep(gameStepCount + 1), 350)
+            setIntervalId(setTimeout(() => updateGameStep(gameStepCount + 1), 350))
         }
-    }, [gameStepCount, gameRunning]);
+    }, [gameStepCount, gameRunning, gameMatrix]);
 
     return (
         <div>
@@ -232,7 +233,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
                     setGameStatus(false);
                     if (intervalId !== null) {
                         clearTimeout(intervalId);
-                        intervalId = null;
+                        setIntervalId(intervalId);
                     }
                     gameMatrix.reloadMatrix(matrixProps);
                     setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix));

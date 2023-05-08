@@ -30,7 +30,9 @@ function createJsonCopyLink(jsonString: string) {
 }
 
 const Table: React.FC<TableProps> = ({ testResults, rerender }) => {
-    useEffect(() => {}, [ rerender]);
+    useEffect(() => {
+        // simple way to rerender the component on rerender prop variable change
+    }, [ rerender]);
 
     return (
         <table className="results-table">

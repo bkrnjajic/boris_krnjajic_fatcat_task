@@ -119,7 +119,7 @@ function ResultCalculator() {
                 changeButtonState(false);
             }, 100);
         }
-    }, [ disableButton]);
+    }, [ disableButton, rerenderValue]);
 
     return (
         <div className="results">
@@ -131,6 +131,6 @@ function ResultCalculator() {
             <Table testResults={results} rerender={rerenderValue}></Table>
         </div>
     );
-};
+}
 
 export default ResultCalculator;

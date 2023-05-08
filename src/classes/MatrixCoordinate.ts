@@ -27,6 +27,11 @@ export class MatrixCoordinate {
         return this._type;
     }
 
+    public set type(v: MatrixElementType) {
+        this._lastType = this._type;
+        this._type = v;
+    }
+
     get x(): number {
         return this._x;
     }
@@ -39,10 +44,6 @@ export class MatrixCoordinate {
         return [this._x, this._y];
     }
 
-    public set type(v : MatrixElementType) {
-        this._lastType = this._type;
-        this._type = v;
-    }
     
     /**
      * Used to retrieve the type which was set before it was last changed.
