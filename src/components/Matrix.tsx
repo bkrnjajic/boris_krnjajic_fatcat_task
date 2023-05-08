@@ -10,9 +10,9 @@ const MatrixElement = () => {
 
     return (
         <>
-        {matrix.toString().split('\n').map((row: string, index: number) => (
-            <p key={index}>{row}</p>
-        ))}
+            {matrix.toString().split('\n').map((row: string, index: number) => (
+                <p key={index}>{row}</p>
+            ))}
         </>
     );
 };

@@ -1,8 +1,8 @@
-import React, { useLayoutEffect, useEffect, useState } from "react";
+import React, { useLayoutEffect, useEffect, useState } from 'react';
 import { Matrix, MatrixProps } from '../classes/Matrix';
 import Canvas from './GameCanvas.js';
-import Button from './interaction/StyledButton.js'
-import { Input, InputDefinition } from './interaction/Input.js'
+import Button from './interaction/StyledButton.js';
+import { Input, InputDefinition } from './interaction/Input.js';
 import './MatrixContainer.css';
 
 enum InputMatrixTypes {
@@ -126,7 +126,7 @@ function defineInputs(matrixStartValues: MatrixProps): InputDefinition[] {
         (event) => {
             xStartCooInput.updateErrorMessage(updateMatrixCoordinates(InputMatrixTypes.START_X, event.target.value, matrixStartValues) ?? '');
         }
-    )
+    );
 
     const yStartCooInput = new InputDefinition (
         'Enter matrix Y start position:',
@@ -173,7 +173,7 @@ function defineInputs(matrixStartValues: MatrixProps): InputDefinition[] {
         xEndCooInput,
         yEndCooInput,
         blockSizeCount
-    ]
+    ];
 }
 
 /**
@@ -192,8 +192,8 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
     const [rerenderValue, rerender] = useState<number>(0);
     const [gameStepCount, updateGameStep] = useState<number>(0);
     const [inputs] = useState(defineInputs(matrixProps));
-    const [gameRunning, setGameStatus] = useState<boolean>(false)
-    const [intervalId, setIntervalId] = useState<NodeJS.Timeout|null>(null)
+    const [gameRunning, setGameStatus] = useState<boolean>(false);
+    const [intervalId, setIntervalId] = useState<NodeJS.Timeout|null>(null);
 
     /**
      * Get the current site size and re-render the page based on it to get the matrix
@@ -213,7 +213,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
     useEffect(() => {
         if (!gameMatrix.isDone() && gameRunning) {
             gameMatrix.movePlayer();
-            setIntervalId(setTimeout(() => updateGameStep(gameStepCount + 1), 350))
+            setIntervalId(setTimeout(() => updateGameStep(gameStepCount + 1), 350));
         }
     }, [gameStepCount, gameRunning, gameMatrix]);
 
@@ -225,7 +225,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
                     return <Input
                         key={index}
                         inputDefinition={input}
-                    />
+                    />;
                 })}
             </div>
             <div className="button-container">

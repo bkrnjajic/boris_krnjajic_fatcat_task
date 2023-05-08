@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import { Matrix, MatrixProps } from '../classes/Matrix';
-import Button from './interaction/StyledButton.js'
-import Table, { ResultInterface } from './interaction/Table.js'
+import Button from './interaction/StyledButton.js';
+import Table, { ResultInterface } from './interaction/Table.js';
 import './MatrixContainer.css';
 
 const resultMatrixConfigurations: MatrixProps[] = [

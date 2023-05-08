@@ -27,7 +27,7 @@ const defaultMatrixValues = {
     start: [import.meta.env.VITE_DEFAULT_START_X_COO, import.meta.env.VITE_DEFAULT_START_Y_COO],
     end: [import.meta.env.VITE_DEFAULT_END_X_COO, import.meta.env.VITE_DEFAULT_END_Y_COO],
     blockingObjectCount: import.meta.env.VITE_DEFAULT_BLOCK_OBJ_COUNT
-}
+};
 
 /**
  * Represents the matrix information containing all the current game data and options to control the game progress
@@ -54,9 +54,9 @@ export class Matrix {
         ],
         blockingObjectCount: defaultMatrixValues.blockingObjectCount == null ? 2 : defaultMatrixValues.blockingObjectCount,
     };
-    private _matrixData: MatrixCoordinate[][] = []
-    private _gameLog: MoveResult[] = []
-    private _historicMatrixData: Matrix[] = []
+    private _matrixData: MatrixCoordinate[][] = [];
+    private _gameLog: MoveResult[] = [];
+    private _historicMatrixData: Matrix[] = [];
 
     constructor(props?: MatrixProps) {
         this.resetMatrixData(props);
@@ -76,7 +76,7 @@ export class Matrix {
         // reset all values to default
         this._matrixData = [];
         this._gameLog = [];
-        this._historicMatrixData = []
+        this._historicMatrixData = [];
         this.buildMatrixData();
     }
 
@@ -122,7 +122,7 @@ export class Matrix {
      * @param props 
      */
     reloadMatrix(props: Partial<MatrixProps> = {}) {
-        const defaultProps: MatrixProps = this._defaultProps
+        const defaultProps: MatrixProps = this._defaultProps;
 
         const mergedProps = { ...defaultProps, ...props };
         this._size = mergedProps.size;
@@ -169,13 +169,13 @@ export class Matrix {
      */
     private getCombinations(arr: string[], len: number): Generator<string[]> {
         function* backtrack(start = 0, current: string[] = []): Generator<string[]> {
-          if (current.length === len) {
-            yield current;
-            return;
-          }
-          for (let i = start; i < arr.length; i++) {
-            yield* backtrack(i + 1, [...current, arr[i]]);
-          }
+            if (current.length === len) {
+                yield current;
+                return;
+            }
+            for (let i = start; i < arr.length; i++) {
+                yield* backtrack(i + 1, [...current, arr[i]]);
+            }
         }
         return backtrack();
     }
@@ -236,17 +236,17 @@ export class Matrix {
             (_, indexX) => Array.from({ length: this._size }, (_, indexY) => new MatrixCoordinate(indexX, indexY))
         );
 
-        this.generateStartElement()
-        this.generateEndElement()
-        this.generateBlockingElements()
+        this.generateStartElement();
+        this.generateEndElement();
+        this.generateBlockingElements();
     }
 
     private generateStartElement() {
-        this._matrixData[this._start[0]][this._start[1]].type = MatrixElementType.Start
+        this._matrixData[this._start[0]][this._start[1]].type = MatrixElementType.Start;
     }
 
     private generateEndElement() {
-        this._matrixData[this._end[0]][this._end[1]].type = MatrixElementType.End
+        this._matrixData[this._end[0]][this._end[1]].type = MatrixElementType.End;
     }
 
     /***
@@ -281,9 +281,9 @@ export class Matrix {
         this.factorialMemo.set(1, 1n);
         
         for (let i = 2; i <= n; i++) {
-          const prev = this.factorialMemo.get(i - 1) ?? 1n;
-          const curr = prev * BigInt(i);
-          this.factorialMemo.set(i, curr);
+            const prev = this.factorialMemo.get(i - 1) ?? 1n;
+            const curr = prev * BigInt(i);
+            this.factorialMemo.set(i, curr);
         }
 
         return this.factorialMemo.get(n) ?? 1n;
@@ -304,8 +304,8 @@ export class Matrix {
      */
     private generateBlockingElements(): boolean {
         if (this._blockingObjectCount > 0) {
-            let nonBlockingElements: MatrixCoordinate[] = []
-            const currentBlockingElements: MatrixCoordinate[] = []
+            let nonBlockingElements: MatrixCoordinate[] = [];
+            const currentBlockingElements: MatrixCoordinate[] = [];
             const playerCoordinate = this.getPlayersCoordinates();
             const goalCoordinate = this.getEndCoordinates();
             // nCr = n! / r!(n-r)!
@@ -318,12 +318,12 @@ export class Matrix {
             this._matrixData.forEach((row) => {
                 row.forEach((matrixCoordinate) => {
                     if (matrixCoordinate.type === MatrixElementType.NonBlockingElement) {
-                        nonBlockingElements.push(matrixCoordinate)
+                        nonBlockingElements.push(matrixCoordinate);
                     } else if (matrixCoordinate.type === MatrixElementType.BlockingElement) {
-                        currentBlockingElements.push(matrixCoordinate)
+                        currentBlockingElements.push(matrixCoordinate);
                     }
-                })
-            })
+                });
+            });
 
             let generationCompleted = false;
             const maxCombinations: bigint = this.factorial(nonBlockingElements.length) /
@@ -368,7 +368,7 @@ export class Matrix {
                         triedCombinations.has(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
                         && maxCombinations >= triedCombinations.size);
                 } catch(error) {
-                    randomCombination = []
+                    randomCombination = [];
                 }
 
                 if (maxCombinations < triedCombinations.size) {
@@ -387,9 +387,9 @@ export class Matrix {
                     this._matrixData.forEach((row) => {
                         row.forEach((matrixCoordinate) => {
                             if (matrixCoordinate.type === MatrixElementType.NonBlockingElement) {
-                                recalculatedBlockingFields.push(matrixCoordinate)
+                                recalculatedBlockingFields.push(matrixCoordinate);
                             }
-                        })
+                        });
                     });
 
                     while (pathToEnd.length) {
@@ -407,7 +407,7 @@ export class Matrix {
                     }
                 }
 
-                triedCombinations.add(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','))
+                triedCombinations.add(randomCombination.map((matrixCoordinate: MatrixCoordinate) => matrixCoordinate.coordinateToString()).join(','));
                                     
                 // in order to check if new blocks can be added, we will have to remove them later on if the path can not be found
                 // we could also duplicate the matrix and work with the copy, but that is the worse way
@@ -415,8 +415,8 @@ export class Matrix {
 
                 for (let index = 0; index < randomCombination.length; index++) {
                     const combination: MatrixCoordinate = randomCombination[index];
-                    combination.type = MatrixElementType.BlockingElement
-                    newBlockingElements.push(combination)
+                    combination.type = MatrixElementType.BlockingElement;
+                    newBlockingElements.push(combination);
                 }
 
                 if (this.getShortestPath(
@@ -429,7 +429,7 @@ export class Matrix {
                 } else {
                     randomCombination.forEach((matrixCoordinate: MatrixCoordinate) => {
                         matrixCoordinate.returnToPreviousType();
-                    })
+                    });
                 }
             }
 
@@ -460,8 +460,8 @@ export class Matrix {
                 if (coordinate.type === type) {
                     result.push(coordinate);
                 }
-            })
-        })
+            });
+        });
 
         return result;
     }
@@ -533,7 +533,7 @@ export class Matrix {
         // preserves the data if we want to replay the game in the future
         this._historicMatrixData.push(
             Object.assign({}, this)
-        )
+        );
     }
 
     /**
@@ -545,14 +545,14 @@ export class Matrix {
     }
 
     public toString(): string {
-        let stringRepresentation = ''
+        let stringRepresentation = '';
 
         this._matrixData.forEach((rowValues : MatrixCoordinate[]) => {
             rowValues.forEach((matrixCoordinate : MatrixCoordinate) => {
-                stringRepresentation += matrixCoordinate.toString()
+                stringRepresentation += matrixCoordinate.toString();
             });
             stringRepresentation += '\n';
-        })
+        });
          
         return stringRepresentation;
     }

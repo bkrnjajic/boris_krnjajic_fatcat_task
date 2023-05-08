@@ -1,4 +1,4 @@
-import './App.css'
+import './App.css';
 import Game from './components/MatrixContainer';
 import ResultCalculator from './components/ResultCalculator';
 import { Matrix, MatrixProps } from './classes/Matrix';
@@ -14,14 +14,14 @@ function App() {
 
     return (
         <>
-        <div className="card">
-            <Game gameMatrix={gameMatrix} matrixProps={matrixProps}/>
-        </div>
-        <div className="result-card">
-            <ResultCalculator/>
-        </div>
+            <div className="card">
+                <Game gameMatrix={gameMatrix} matrixProps={matrixProps}/>
+            </div>
+            <div className="result-card">
+                <ResultCalculator/>
+            </div>
         </>
-    )
+    );
 }
 
-export default App
+export default App;

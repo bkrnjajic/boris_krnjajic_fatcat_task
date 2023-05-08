@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import { MoveResult } from '../../classes/Matrix';
 import Button from './StyledButton';
-import './Table.css'
+import './Table.css';
 
 export interface ResultInterface  {
     matrixSize: number,
@@ -52,7 +52,7 @@ const Table: React.FC<TableProps> = ({ testResults, rerender }) => {
                             <td>{testResult.blockingElementSize}</td>
                             <td>{testResult.speed}</td>
                             <td><Button onClick={() => {
-                                createJsonCopyLink(JSON.stringify(testResult.result, null, 2))
+                                createJsonCopyLink(JSON.stringify(testResult.result, null, 2));
                             }}>COPY RESULT JSON</Button></td>
                         </tr>
                     );

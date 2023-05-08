@@ -1,5 +1,5 @@
 import React from 'react';
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react';
 import { Matrix } from '../classes/Matrix';
 import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate';
 
@@ -57,7 +57,7 @@ const drawRect = (
     context.fillRect(startPosition + x + border / 2, startPosition + y + border / 2, width, height);
 
     context.lineWidth = border;
-    context.strokeStyle = "black";
+    context.strokeStyle = 'black';
     context.strokeRect(startPosition + x, startPosition + y, width, height);
 };
 
@@ -65,7 +65,7 @@ const drawRect = (
  * Draws the current matrix data on the canvas
  */
 function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix) {
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext('2d');
     if (!context) {
         return;
     }
@@ -77,25 +77,25 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix) {
     canvas.height = rect.height;
     context.clearRect(0, 0, canvas.width, canvas.height);
     
-    const blockSize = (canvas.width / matrix.size) * 0.9
-    const startPosition = (canvas.width - blockSize * matrix.size) / 2
+    const blockSize = (canvas.width / matrix.size) * 0.9;
+    const startPosition = (canvas.width - blockSize * matrix.size) / 2;
 
     // Draw the matrix elements
     for (let xCoo = 0; xCoo < matrix.size; xCoo++) {
         for (let yCoo = 0; yCoo < matrix.size; yCoo++) {
             const element: MatrixCoordinate = matrix.matrixData[xCoo][yCoo];
-            let color = "";
+            let color = '';
 
             if (element.type === MatrixElementType.BlockingElement) {
-                color = "#0000FF";
+                color = '#0000FF';
             } else if (element.type === MatrixElementType.NonBlockingElement) {
-                color = "#00ff00";
+                color = '#00ff00';
             } else if (element.type === MatrixElementType.Player) {
-                color = "#800080";
+                color = '#800080';
             } else if (element.type === MatrixElementType.Start) {
-                color = "#FFFF00";
+                color = '#FFFF00';
             } else if (element.type === MatrixElementType.End) {
-                color = "#FF0000";
+                color = '#FF0000';
             }
 
             drawRect(context, xCoo * blockSize, yCoo * blockSize, blockSize, blockSize, 1, color, startPosition);

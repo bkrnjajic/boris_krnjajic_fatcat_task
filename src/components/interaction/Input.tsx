@@ -9,7 +9,7 @@ export class InputDefinition {
     public type: string;
     public value: string|number;
     public errorMessage: string|null|undefined;
-    public callback: (event: ChangeEvent<HTMLInputElement>) => string|void
+    public callback: (event: ChangeEvent<HTMLInputElement>) => string|void;
     private _setErrorMessage: null|((error: string ) => void) = null;
 
     constructor(
@@ -19,11 +19,11 @@ export class InputDefinition {
         errorMessage: string | null | undefined = null,
         callback: (event: ChangeEvent<HTMLInputElement>) => string|void
     ) {
-            this.label = label;
-            this.type = type;
-            this.value = value;
-            this.errorMessage = errorMessage;
-            this.callback = callback;
+        this.label = label;
+        this.type = type;
+        this.value = value;
+        this.errorMessage = errorMessage;
+        this.callback = callback;
     }
 
     set setErrorMessage(callback: null|((error: string ) => void)) {
@@ -64,7 +64,7 @@ export const Input: React.FC<InputProps> = ({ inputDefinition }) => {
         if (error != null) {
             setErrorMessage(error);
         }
-    }
+    };
   
     return (
         <div className="styled-input">
@@ -72,5 +72,5 @@ export const Input: React.FC<InputProps> = ({ inputDefinition }) => {
             <input type={inputDefinition.type} defaultValue={inputDefinition.value} onChange={inputDefinition.callback} />
             {errorMessage && <span style={{ color: 'red' }}>{errorMessage}</span>}
         </div>
-    )
-}
+    );
+};

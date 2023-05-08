@@ -53,7 +53,7 @@ export class MatrixCoordinate {
     }
 
     public equals(other: MatrixCoordinate): boolean {
-      return this._x === other._x && this._y === other._y;
+        return this._x === other._x && this._y === other._y;
     }
 
     public coordinateToString(): string {
