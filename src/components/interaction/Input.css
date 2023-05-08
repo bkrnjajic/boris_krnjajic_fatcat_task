@@ -1,0 +1,30 @@
+.styled-input {
+    background-color: black;
+    color: white;
+    font-size: 20px;
+    padding: 10px 60px;
+    border-radius: 5px;
+    margin: 10px 0px;
+    cursor: pointer;
+    display: grid;
+    justify-content: center;
+    width: calc(30.5% - 10px);
+    margin: 5px;
+    box-sizing: border-box;
+}
+
+label {
+    display: block;
+}
+
+input {
+    display: block;
+    font-size: 18px;
+    text-align: center;
+}
+@media (max-width: 480px) {
+    .styled-input {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
