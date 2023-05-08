@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MoveResult } from '../../classes/Matrix';
 import Button from './StyledButton';
+import { createJsonCopyLink } from '../../helpers/clipboard';
 import './Table.css';
 
 export interface ResultInterface  {
@@ -13,20 +14,6 @@ export interface ResultInterface  {
 interface TableProps {
     testResults: ResultInterface[];
     rerender: number;
-}
-
-/**
- * Copies the JSON into clipboard
- * @param jsonString - json data as a string
- */
-function createJsonCopyLink(jsonString: string) {
-    navigator.clipboard.writeText(jsonString)
-        .then(() => {
-            console.log('JSON copied to clipboard');
-        })
-        .catch((err) => {
-            console.error('Failed to copy JSON: ', err);
-        });
 }
 
 const Table: React.FC<TableProps> = ({ testResults, rerender }) => {

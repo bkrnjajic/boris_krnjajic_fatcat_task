@@ -3,6 +3,7 @@ import { Matrix, MatrixProps } from '../classes/Matrix';
 import Canvas from './GameCanvas.js';
 import Button from './interaction/StyledButton.js';
 import { Input, InputDefinition } from './interaction/Input.js';
+import { createJsonCopyLink } from './../helpers/clipboard';
 import './MatrixContainer.css';
 
 enum InputMatrixTypes {
@@ -193,6 +194,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
     const [gameStepCount, updateGameStep] = useState<number>(0);
     const [inputs] = useState(defineInputs(matrixProps));
     const [gameRunning, setGameStatus] = useState<boolean>(false);
+    const [gameDone, setGameDone] = useState<boolean>(false);
     const [intervalId, setIntervalId] = useState<NodeJS.Timeout|null>(null);
 
     /**
@@ -214,6 +216,10 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
         if (!gameMatrix.isDone() && gameRunning) {
             gameMatrix.movePlayer();
             setIntervalId(setTimeout(() => updateGameStep(gameStepCount + 1), 350));
+        } else if (gameMatrix.isDone()){
+            setGameDone(true);
+        } else {
+            setGameDone(false);
         }
     }, [gameStepCount, gameRunning, gameMatrix]);
 
@@ -231,6 +237,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
             <div className="button-container">
                 <Button onClick={() => {
                     setGameStatus(false);
+                    setGameDone(false);
                     if (intervalId !== null) {
                         clearTimeout(intervalId);
                         setIntervalId(intervalId);
@@ -241,20 +248,40 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
                 }}>
                     Restart
                 </Button>
-                <Button onClick={() => {
-                    gameMatrix.movePlayer();
-                    rerender(rerenderValue + 1);
-                }}>
-                    Move a Step
-                </Button>
                 <Button
                     onClick={() => {
-                        setGameStatus(true);
+                        gameMatrix.movePlayer();
+                        if (!gameMatrix.isDone()) {
+                            setGameDone(false);
+                        } else {
+                            setGameDone(true);
+                        }
+                        rerender(rerenderValue + 1);
                     }}
-                    disabled={gameRunning}
+                    disabled={gameDone}
                 >
-                    Move to End
+                    Move a Step
                 </Button>
+                {
+                    !gameDone ? <Button
+                        onClick={() => {
+                            setGameStatus(true);
+                        }}
+                        disabled={gameRunning}
+                    >
+                        Move to End
+                    </Button> : null
+                }
+                {
+                    gameDone ? <Button
+                        onClick={() => {
+                            createJsonCopyLink(JSON.stringify(gameMatrix.gameLog, null, 2));
+                        }}
+                    >
+                        COPY RESULT JSON
+                    </Button> : null
+                }
+                
             </div>
         </div>
     );

@@ -22,6 +22,11 @@ export interface MoveResult {
     blockingObjectCoordinates: [number, number][],
 }
 
+// use these values carefully. In the case of complex matrixes , the lower these values are the faster the code will work
+// but we will change speed for non randomness and kind of cheat little bit
+const MAX_RANDOM_GUESS_COUNT = 20000;
+const MAX_UNIQUE_COMBINATION_COUNT = 100000;
+
 const defaultMatrixValues = {
     size: import.meta.env.VITE_DEFAULT_MATRIX_SIZE,
     start: [import.meta.env.VITE_DEFAULT_START_X_COO, import.meta.env.VITE_DEFAULT_START_Y_COO],
@@ -293,8 +298,8 @@ export class Matrix {
      * In order to optimize the speed to the max we will use 3 different algorithms depending how deep we get into getting new values.
      * 
      * 1. We will start by randomly generating new blocking fields based on the fields which can be blocked.
-     * 2. Once we try to randomly generate for 20000 times, we will retrieve all possible combinations and look for one we didn't have randomly generated and continue trying that path.
-     * 3. For big matrixes this is also not enough. So in this case if we get to 100000 tried blocking combinations, we will retrieve the actual path to the end
+     * 2. Once we try to randomly generate for MAX_RANDOM_GUESS_COUNT times, we will retrieve all possible combinations and look for one we didn't have randomly generated and continue trying that path.
+     * 3. For big matrixes this is also not enough. So in this case if we get to MAX_UNIQUE_COMBINATION_COUNT tried blocking combinations, we will retrieve the actual path to the end
      *    and not block this values too.
      * 
      * We will always keep count of unique values and make sure it is less
@@ -347,7 +352,7 @@ export class Matrix {
                         randomCombination = randomIndexes.map(index => nonBlockingElements[index]).sort((one, two) => (one.coordinateToString() > two.coordinateToString() ? -1 : 1));
 
                         // if our random combination generation gets stuck we will help it out by getting an actual working combination
-                        if (invalidValuesCounter > 10000) {
+                        if (invalidValuesCounter > MAX_RANDOM_GUESS_COUNT) {
                             combinationGenerator = combinationGenerator ?? this.getCombinations(
                                 nonBlockingElements.map((coordinate: MatrixCoordinate) => coordinate.coordinateToString()), this._blockingObjectCount
                             );
@@ -378,7 +383,7 @@ export class Matrix {
 
                 // once our code is really stuck, we will help it by telling it which fields are needed
                 // to get to the end of the matrix, and then we will not block these values.
-                if (triedCombinations.size > 100000) {
+                if (triedCombinations.size > MAX_UNIQUE_COMBINATION_COUNT) {
                     const pathToEnd = this.getShortestPath(
                         playerCoordinate.getCoordinates(),
                         goalCoordinate.getCoordinates()
