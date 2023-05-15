@@ -7,7 +7,7 @@ import { MatrixCoordinate, MatrixElementType } from '../classes/MatrixCoordinate
  * interface definining canvas input parameters
  */
 interface CanvasProps {
-    matrix: Matrix;
+    matrix: Matrix|MatrixCoordinate[][];
     size: number;
     rerender: number;
 }
@@ -64,12 +64,14 @@ const drawRect = (
 /***
  * Draws the current matrix data on the canvas
  */
-function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix) {
+function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix|MatrixCoordinate[][]) {
     const context = canvas.getContext('2d');
     if (!context) {
         return;
     }
 
+    const matrixSize: number = Array.isArray(matrix) ? matrix.length : matrix.size;
+    const matrixData: MatrixCoordinate[][] = Array.isArray(matrix) ? matrix : matrix.matrixData;
     // Clear the canvas
     const rect = canvas.getBoundingClientRect();
 
@@ -77,13 +79,13 @@ function drawMatrixOnCanvas(canvas: HTMLCanvasElement, matrix: Matrix) {
     canvas.height = rect.height;
     context.clearRect(0, 0, canvas.width, canvas.height);
     
-    const blockSize = (canvas.width / matrix.size) * 0.9;
-    const startPosition = (canvas.width - blockSize * matrix.size) / 2;
+    const blockSize = (canvas.width / matrixSize) * 0.9;
+    const startPosition = (canvas.width - blockSize * matrixSize) / 2;
 
     // Draw the matrix elements
-    for (let xCoo = 0; xCoo < matrix.size; xCoo++) {
-        for (let yCoo = 0; yCoo < matrix.size; yCoo++) {
-            const element: MatrixCoordinate = matrix.matrixData[xCoo][yCoo];
+    for (let xCoo = 0; xCoo < matrixSize; xCoo++) {
+        for (let yCoo = 0; yCoo < matrixSize; yCoo++) {
+            const element: MatrixCoordinate = matrixData[xCoo][yCoo];
             let color = '';
 
             if (element.type === MatrixElementType.BlockingElement) {

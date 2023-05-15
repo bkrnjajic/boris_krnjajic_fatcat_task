@@ -5,6 +5,7 @@ import Button from './interaction/StyledButton.js';
 import { Input, InputDefinition } from './interaction/Input.js';
 import { createJsonCopyLink } from './../helpers/clipboard';
 import './MatrixContainer.css';
+import { processWidthSize } from '../helpers/display.js';
 
 enum InputMatrixTypes {
     SIZE = 'size',
@@ -13,15 +14,6 @@ enum InputMatrixTypes {
     END_X = 'end.0',
     END_Y = 'end.1',
     BLOCK_COUNT = 'blockingObjectCount',
-}
-
-/***
- * We want to make sure not to make the matrix huge, so we will limit the size
- * based on the numberof tiles. single tile can be maximum 120 px wide
- */
-function processWidthSize(screenSize: number, matrix: Matrix) {
-    const maxSizePerMatrix = matrix.size * 120 > 1200 ? 1200 : matrix.size * 120;
-    return screenSize > maxSizePerMatrix ? maxSizePerMatrix : screenSize;
 }
 
 /**
@@ -203,7 +195,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
      */
     useLayoutEffect(() => {
         function updateSize() {
-            setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix));
+            setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix.size));
         }
 
         window.addEventListener('resize', updateSize);
@@ -243,7 +235,7 @@ const MatrixContainer: React.FC<MatrixContainerProps> = ({ gameMatrix, matrixPro
                         setIntervalId(intervalId);
                     }
                     gameMatrix.reloadMatrix(matrixProps);
-                    setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix));
+                    setAppWidth(processWidthSize(document.documentElement.clientWidth, gameMatrix.size));
                     rerender(rerenderValue + 1);
                 }}>
                     Restart

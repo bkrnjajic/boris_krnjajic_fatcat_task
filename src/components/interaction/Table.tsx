@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
-import { MoveResult } from '../../classes/Matrix';
+import React, { useEffect, useRef } from 'react';
+import { Matrix, MoveResult } from '../../classes/Matrix';
 import Button from './StyledButton';
 import { createJsonCopyLink } from '../../helpers/clipboard';
 import './Table.css';
 
 export interface ResultInterface  {
+    gameMatrix: Matrix,
     matrixSize: number,
     blockingElementSize: number,
     speed: number,
@@ -13,13 +14,23 @@ export interface ResultInterface  {
 
 interface TableProps {
     testResults: ResultInterface[];
-    rerender: number;
+    rerenderTable: number;
 }
 
-const Table: React.FC<TableProps> = ({ testResults, rerender }) => {
+const Table: React.FC<TableProps> = ({ testResults, rerenderTable }) => {
+    const prevRerenderTableRef = useRef(rerenderTable);
+
     useEffect(() => {
-        // simple way to rerender the component on rerender prop variable change
-    }, [ rerender]);
+        if (prevRerenderTableRef.current !== rerenderTable) {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                left: 0,
+                behavior: 'smooth'
+            });
+        }
+        prevRerenderTableRef.current = rerenderTable;
+    }, [ rerenderTable]);
+
 
     return (
         <table className="results-table">
