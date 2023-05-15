@@ -61,7 +61,7 @@ export class Matrix {
     };
     private _matrixData: MatrixCoordinate[][] = [];
     private _gameLog: MoveResult[] = [];
-    private _historicMatrixData: Matrix[] = [];
+    private _historicMatrixData: MatrixCoordinate[][][] = [];
 
     constructor(props?: MatrixProps) {
         this.resetMatrixData(props);
@@ -119,6 +119,9 @@ export class Matrix {
     }
     get gameLog(): MoveResult[] {
         return this._gameLog;
+    }
+    get historicMatrixData(): MatrixCoordinate[][][] {
+        return this._historicMatrixData;
     }
 
     /**
@@ -535,9 +538,15 @@ export class Matrix {
             movingObjectCoordinates: [playersLocation.x, playersLocation.y],
             blockingObjectCoordinates: newBlockingElements.length ? newBlockingElements.map((coordinate: MatrixCoordinate) => coordinate.getCoordinates()) : [],
         });
-        // preserves the data if we want to replay the game in the future
+        // preserves the data if we want to replay the game in the future.
         this._historicMatrixData.push(
-            Object.assign({}, this)
+            this._matrixData.map(
+                (row: MatrixCoordinate[]) => {
+                    return row.map((element: MatrixCoordinate) => {
+                        const matrixCoordinateCopy = new MatrixCoordinate(element.x, element.y);
+                        return Object.assign(matrixCoordinateCopy, element);
+                    });
+                })
         );
     }
 

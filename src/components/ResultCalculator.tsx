@@ -1,136 +1,123 @@
-import { useState, useEffect } from 'react';
-import { Matrix, MatrixProps } from '../classes/Matrix';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import Button from './interaction/StyledButton.js';
 import Table, { ResultInterface } from './interaction/Table.js';
+import Canvas from './GameCanvas.js';
+import { processWidthSize } from '../helpers/display.js';
 import './MatrixContainer.css';
+import { MatrixCoordinate } from '../classes/MatrixCoordinate.js';
 
-const resultMatrixConfigurations: MatrixProps[] = [
-    {
-        size: 5,
-        blockingObjectCount: 1,
-        start: [0, 0],
-        end: [4, 4]
-    },
-    {
-        size: 5,
-        blockingObjectCount: 2,
-        start: [0, 0],
-        end: [4, 4]
-    },
-    {
-        size: 5,
-        blockingObjectCount: 3,
-        start: [0, 0],
-        end: [4, 4]
-    },{
-        size: 10,
-        blockingObjectCount: 2,
-        start: [0, 0],
-        end: [9, 9]
-    },
-    {
-        size: 10,
-        blockingObjectCount: 3,
-        start: [0, 0],
-        end: [9, 9]
-    },
-    {
-        size: 10,
-        blockingObjectCount: 4,
-        start: [0, 0],
-        end: [9, 9]
-    },
-    {
-        size: 20,
-        blockingObjectCount: 3,
-        start: [0, 0],
-        end: [19, 19]
-    },
-    {
-        size: 20,
-        blockingObjectCount: 4,
-        start: [0, 0],
-        end: [19, 19]
-    },
-    {
-        size: 20,
-        blockingObjectCount: 5,
-        start: [0, 0],
-        end: [19, 19]
-    },
-    {
-        size: 50,
-        blockingObjectCount: 5,
-        start: [0, 0],
-        end: [49, 49]
-    },
-    {
-        size: 50,
-        blockingObjectCount: 6,
-        start: [0, 0],
-        end: [49, 49]
-    },
-    {
-        size: 50,
-        blockingObjectCount: 7,
-        start: [0, 0],
-        end: [49, 49]
-    }
-];
 
-/**
- * Runs the test on resultMatrixConfigurations and returns the results
- * @returns ResultInterface[]
+/***
+ * Retrieves the result from the generator. Returns null if none was found (generator has been closed)
  */
-function calculate() {
-    const results: ResultInterface[] = [];
+function generateTestResults(testResultGenerator: Generator<ResultInterface>): ResultInterface|null {
+    const testResult = testResultGenerator.next();
 
-    resultMatrixConfigurations.forEach((matrixConfiguration: MatrixProps) => {
-        const gameMatrix = new Matrix(matrixConfiguration);
-        const startTime = Date.now();
-        while(!gameMatrix.isDone()) {
-            gameMatrix.movePlayer();
-        }
-        const endTime = Date.now();
+    if (testResult.done) {
+        return null;
+    }
 
-        results.push({
-            matrixSize: gameMatrix.size,
-            blockingElementSize: gameMatrix.blockingObjectCount,
-            speed: endTime - startTime,
-            result: gameMatrix.gameLog
-        });
-    });
-
-    return results;
+    return testResult.value;
 }
 
-function ResultCalculator() {
-    const [rerenderValue, rerender] = useState<number>(0);
-    const [disableButton, changeButtonState] = useState<boolean>(false);
-    const [results, setResults] = useState<ResultInterface[]>([]);
+/**
+ * Component props
+ */
+interface ResultCalculatorProps {
+    resultGenerator: Generator<ResultInterface>;
+    regenerateResults: () => void
+}
 
-    useEffect(() => {
-        if (disableButton) {
-            // in the case of no timeout here, the button will not actualy get disabled, because
-            // setResults will take the code execution and block the UI
-            setTimeout(() => {
-                setResults(calculate());
-                rerender(rerenderValue + 1);
-                changeButtonState(false);
-            }, 100);
+/***
+ * Canvas class initialization
+ */
+const ResultCalculator: React.FC<ResultCalculatorProps> = ({resultGenerator, regenerateResults} : ResultCalculatorProps) => {
+    const [appWidth, setAppWidth] = useState<number>(0);
+    const [rerenderValue, rerender] = useState<number>(0);
+    const [rerenderTableValue, rerenderTable] = useState<number>(0);
+    const [disableButton, changeButtonState] = useState<boolean>(false);
+    const [result, setResult] = useState<ResultInterface|undefined|null>();
+    const [gameMatrix, setNewGameMatrix] = useState<MatrixCoordinate[][]>([]);
+    const [frameCounter, setFrameCounter] = useState<number>(0);
+    const [tableResults, updateTableResults] = useState<ResultInterface[]>([]);
+    
+    /**
+     * Get the current site size and re-render the page based on it to get the matrix
+     * properly shown in full size all the time
+     */
+    useLayoutEffect(() => {
+        function updateSize() {
+            setAppWidth(processWidthSize(document.documentElement.clientWidth, result?.matrixSize));
         }
-    }, [ disableButton, rerenderValue]);
+
+        window.addEventListener('resize', updateSize);
+        updateSize();
+
+        return () => window.removeEventListener('resize', updateSize);
+    });
+
+    /**
+     * Runs the test first, and then animates the matrix based on the historical data. This way we get the actual
+     * execution value without any UI rendering.
+     */
+    useEffect(() => {
+        if (!disableButton) {
+            return;
+        }
+
+        if (result === undefined) {
+            const result: ResultInterface|null = generateTestResults(resultGenerator);
+            if (result) {
+                setResult(result);
+                tableResults.push(result);
+                rerenderTable(rerenderTableValue + 1);
+            }
+        } else if (result) {
+            if (frameCounter < result.gameMatrix.historicMatrixData.length) {
+                setNewGameMatrix(result.gameMatrix.historicMatrixData[frameCounter]);
+                setFrameCounter(frameCounter + 1);
+                setTimeout(() => rerender(rerenderValue + 1), 200);
+            } else {
+                const result: ResultInterface|null = generateTestResults(resultGenerator);
+                if (result) {
+                    setFrameCounter(0);
+                    setResult(result);
+                    tableResults.push(result);
+                    rerenderTable(rerenderTableValue + 1);
+                } else {
+                    setResult(null);
+                }
+            }
+        } else {
+            setFrameCounter(0);
+            changeButtonState(false);
+            setResult(undefined);
+            regenerateResults();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [result, disableButton, rerenderValue]);
 
     return (
         <div className="results">
-            <Button disabled={disableButton} onClick={() => {
-                changeButtonState(true);
+            <Button onClick={() => {
+                if (disableButton) {
+                    setFrameCounter(0);
+                    changeButtonState(false);
+                    setResult(undefined);
+                    regenerateResults();
+                } else {
+                    changeButtonState(true);
+                    updateTableResults([]);
+                }
             }}>
-                Calculate test results:
+                {disableButton ? 'Stop Tests:' : 'Run Tests:' }
             </Button>
-            <Table testResults={results} rerender={rerenderValue}></Table>
+            <div className="card">
+                <Canvas matrix={gameMatrix} size={appWidth} rerender={rerenderValue}/>
+            </div>
+            <Table testResults={tableResults} rerenderTable={rerenderTableValue}></Table>
         </div>
     );
-}
+};
 
 export default ResultCalculator;
